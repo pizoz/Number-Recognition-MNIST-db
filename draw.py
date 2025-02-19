@@ -46,6 +46,7 @@ img_size = 280
 canvas = Image.new("L", (img_size, img_size), 0)  # Black canvas
 draw = ImageDraw.Draw(canvas)
 last_x, last_y = None, None  # Track previous mouse position
+line_width = 20
 
 def start_draw(event):
     global last_x, last_y
@@ -61,13 +62,22 @@ def draw_digit(event):
         start_draw(event)
         return
     
-    # Draw line from last position to current
-    line_width = 20
-    draw.line([last_x, last_y, event.x, event.y], fill=255, width=line_width)
-    canvas_tk.create_line(last_x, last_y, event.x, event.y, fill="white", width=line_width)
+    # Calculate intermediate points for smooth drawing
+    distance = max(abs(event.x - last_x), abs(event.y - last_y))
+    if distance == 0:
+        return
     
-    # Update last position
+    param = line_width // 2
+    
+    # Draw along the path between points
+    for i in range(distance + 1):
+        x = last_x + (event.x - last_x) * i / distance
+        y = last_y + (event.y - last_y) * i / distance
+        draw.ellipse([x-param, y-param, x+param, y+param], fill=255)
+        canvas_tk.create_oval(x-param, y-param, x+param, y+param, fill="white", outline="white")
+    
     last_x, last_y = event.x, event.y
+
 
 def preprocess_image(img):
     """Convert the drawn image to a 28x28 tensor suitable for the model"""
